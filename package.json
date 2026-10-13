@@ -24,11 +24,12 @@
     "@opentelemetry/sdk-node": "^0.223.0",
     "@prisma/adapter-pg": "^7.4.1",
     "@prisma/client": "^7.4.1",
-    "dotenv": "^17.3.1",
+    "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "helmet": "^8.3.0",
     "pino": "^10.4.0",
     "pino-http": "^11.0.0",
+    "prisma": "^7.10.1",
     "prom-client": "^15.1.3"
   },
   "devDependencies": {
@@ -36,7 +37,6 @@
     "@types/node": "^25.3.1",
     "@types/supertest": "^7.2.1",
     "nodemon": "^3.1.14",
-    "prisma": "^7.4.1",
     "supertest": "^7.3.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
