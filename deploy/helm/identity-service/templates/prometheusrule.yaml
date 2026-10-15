@@ -1,0 +1,67 @@
+{{- if .Values.monitoring.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: identity-slo
+  labels:
+    {{- include "identity.labels" . | nindent 4 }}
+spec:
+  groups:
+    - name: identity-sli
+      rules:
+        {{- range list "5m" "30m" "1h" "6h" }}
+        - record: identify:error_ratio:rate{{ . }}
+          expr: |
+            # "or vector(0)" keeps the ratio at 0 instead of empty when there are no 5xx series yet.
+            (sum(rate(http_requests_total{route="/identify",status=~"5.."}[{{ . }}])) or vector(0))
+            /
+            sum(rate(http_requests_total{route="/identify"}[{{ . }}]))
+        {{- end }}
+        - record: identify:latency_p95:5m
+          expr: histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{route="/identify"}[5m])))
+
+    # SLO is 99.5% successful /identify requests over 30 days, so the error budget is 0.5%.
+    # A burn rate of 14.4 uses 2% of the monthly budget in 1 hour; 6 uses 5% in 6 hours.
+    - name: identity-alerts
+      rules:
+        - alert: IdentifyErrorBudgetFastBurn
+          expr: identify:error_ratio:rate5m > (14.4 * 0.005) and identify:error_ratio:rate1h > (14.4 * 0.005)
+          for: 1m
+          labels:
+            severity: page
+          annotations:
+            summary: /identify is failing fast enough to burn the monthly error budget in about 2 days
+            runbook: docs/RUNBOOK.md#high-error-rate
+        - alert: IdentifyErrorBudgetSlowBurn
+          expr: identify:error_ratio:rate30m > (6 * 0.005) and identify:error_ratio:rate6h > (6 * 0.005)
+          for: 5m
+          labels:
+            severity: ticket
+          annotations:
+            summary: /identify error rate is steadily eating the error budget
+            runbook: docs/RUNBOOK.md#high-error-rate
+        - alert: IdentifyLatencyHigh
+          expr: identify:latency_p95:5m > 0.3
+          for: 10m
+          labels:
+            severity: ticket
+          annotations:
+            summary: p95 latency of /identify is above 300 ms
+            runbook: docs/RUNBOOK.md#high-latency
+        - alert: ApiPodsNotReady
+          expr: kube_deployment_status_replicas_available{deployment="api", namespace="{{ .Release.Namespace }}"} < 1
+          for: 1m
+          labels:
+            severity: page
+          annotations:
+            summary: No api pod is ready to serve traffic
+            runbook: docs/RUNBOOK.md#api-pods-not-ready
+        - alert: PostgresDown
+          expr: kube_statefulset_status_replicas_ready{statefulset="postgres", namespace="{{ .Release.Namespace }}"} < 1
+          for: 1m
+          labels:
+            severity: page
+          annotations:
+            summary: Postgres has no ready replica
+            runbook: docs/RUNBOOK.md#postgres-down
+{{- end }}
