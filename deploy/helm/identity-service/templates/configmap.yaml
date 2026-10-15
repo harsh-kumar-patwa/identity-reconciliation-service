@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-config
+  labels:
+    {{- include "identity.labels" . | nindent 4 }}
+data:
+  PORT: "3000"
+  LOG_LEVEL: {{ .Values.config.logLevel | quote }}
+  FEATURE_NORMALIZE_INPUT: {{ .Values.config.featureNormalizeInput | quote }}
+  CHAOS_ERROR_RATE: {{ .Values.config.chaosErrorRate | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.config.otelEndpoint | quote }}
+  OTEL_SERVICE_NAME: identity-service
+  OTEL_TRACES_SAMPLER: parentbased_traceidratio
+  OTEL_TRACES_SAMPLER_ARG: {{ .Values.config.traceSampleRatio | quote }}

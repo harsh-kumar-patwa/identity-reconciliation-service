@@ -1,0 +1,6 @@
+image:
+  tag: latest
+
+config:
+  logLevel: debug
+  featureNormalizeInput: "true"
