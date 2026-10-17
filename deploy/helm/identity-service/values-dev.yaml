@@ -4,3 +4,4 @@ image:
 config:
   logLevel: debug
   featureNormalizeInput: "true"
+  chaosErrorRate: "0.3"
