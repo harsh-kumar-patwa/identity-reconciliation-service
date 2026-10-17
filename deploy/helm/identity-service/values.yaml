@@ -1,0 +1,49 @@
+image:
+  repository: ghcr.io/harsh-kumar-patwa/identity-reconciliation-service
+  tag: latest
+  pullPolicy: IfNotPresent
+
+replicas: 2
+
+config:
+  logLevel: info
+  featureNormalizeInput: "false"
+  chaosErrorRate: "0"
+  otelEndpoint: http://jaeger-collector.monitoring:4318
+  traceSampleRatio: "1.0"
+
+# Created outside git by scripts/create-secrets.sh
+dbSecretName: identity-db
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 4
+  targetCPU: 70
+
+ingress:
+  enabled: true
+  host: identity.local
+  tlsSecretName: identity-tls
+
+postgres:
+  image: postgres:16-alpine
+  storage: 1Gi
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+monitoring:
+  enabled: true

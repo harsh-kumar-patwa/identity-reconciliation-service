@@ -1,0 +1,6 @@
+image:
+  tag: sha-0866ec9
+
+config:
+  logLevel: debug
+  featureNormalizeInput: "true"

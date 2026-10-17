@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: identity-dev
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/harsh-kumar-patwa/identity-reconciliation-service.git
+    # Tracks the PR branch while the project is under review. Switch to main after merge.
+    targetRevision: devops/production-ready
+    path: deploy/helm/identity-service
+    helm:
+      valueFiles:
+        - values.yaml
+        - values-dev.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: identity
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+  # The HPA owns the replica count, so Argo CD should not fight it.
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      name: api
+      jsonPointers:
+        - /spec/replicas

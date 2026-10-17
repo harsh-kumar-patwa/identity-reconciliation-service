@@ -1,0 +1,31 @@
+image:
+  tag: latest
+
+replicas: 3
+
+config:
+  logLevel: info
+  featureNormalizeInput: "false"
+  traceSampleRatio: "0.1"
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 256Mi
+  limits:
+    cpu: "1"
+    memory: 512Mi
+
+autoscaling:
+  minReplicas: 3
+  maxReplicas: 8
+
+postgres:
+  storage: 10Gi
+  resources:
+    requests:
+      cpu: "1"
+      memory: 1Gi
+    limits:
+      cpu: "1"
+      memory: 1Gi

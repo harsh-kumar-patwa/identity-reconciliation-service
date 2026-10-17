@@ -1,0 +1,40 @@
+## Tracing release sha-07c7523 from commit to running pod, 2026-10-17T18:00:47Z
+
+1. Source commit
+$ git log -1 --format='%H %an %s' 07c7523
+07c752363c9777a5f7877ece5c8f6daac5a33029 Harsh Kumar Fix Argo CD getting stuck on the first sync
+
+2. CI run for that commit: https://github.com/harsh-kumar-patwa/identity-reconciliation-service/actions/runs/39055385226
+headSha=07c752363c9777a5f7877ece5c8f6daac5a33029 event=push conclusion=success
+  job chart: success
+  job test: success
+  job security: success
+  job image: success
+  job release: success
+
+3. Approval on the dev environment
+  dev approved by harsh-kumar-patwa
+
+4. Release commit written by CI
+$ git log -1 --format='%h %an %s' -- deploy/helm/identity-service/values-dev.yaml
+93f6b10 github-actions[bot] Deploy sha-07c7523 to dev
+-  tag: sha-8024d42
++  tag: sha-07c7523
+
+5. Argo CD sync
+  sync=Synced health=Healthy revision=93f6b108616d5569453865d55053bf39cde24cd8
+
+6. Running pods
+$ kubectl -n identity get pods -l app=api -L app.kubernetes.io/version
+api-74d85d85c4-nl9nv   1/1   Running   0     19s   sha-07c7523
+api-74d85d85c4-npzkh   1/1   Running   0     24s   sha-07c7523
+api-74d85d85c4-qng8x   1/1   Running   0     29s   sha-07c7523
+api-74d85d85c4-td44m   1/1   Running   0     34s   sha-07c7523
+
+7. The app reports
+$ ./scripts/smoke.sh
+Version:
+{"version":"sha-07c7523","gitSha":"07c752363c9777a5f7877ece5c8f6daac5a33029","buildTime":"2026-10-17T23:17:59+05:30"}
+Identify smoke-1792260050@example.com:
+{"contact":{"primaryContactId":23,"emails":["smoke-1792256320@example.com","smoke-1792257826@example.com","smoke-1792259421@example.com","smoke-1792260050@example.com"],"phoneNumbers":["5550001"],"secondaryContactIds":[24,25,5006]}}
+OK

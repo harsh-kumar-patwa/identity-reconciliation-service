@@ -1,0 +1,35 @@
+## HPA under k6 load, 2026-10-17 17:52 to 17:57 UTC
+k6 ramps to 20 virtual users for 1 minute, holds 50 for 3 minutes, then ramps down. scripts/loadtest.js
+
+HPA readings during the 50-user plateau (kubectl get hpa api -o jsonpath):
+17:53:10 cpu=393% target=70% replicas=4/4
+17:53:20 cpu=348% target=70% replicas=4/4
+17:53:30 cpu=310% target=70% replicas=4/4
+17:53:40 cpu=310% target=70% replicas=4/4
+
+$ kubectl -n identity describe hpa api   (events)
+Normal  SuccessfulRescale  New size: 2; reason: Current number of replicas below Spec.MinReplicas
+Normal  SuccessfulRescale  New size: 4; reason: cpu resource utilization (percentage of request) above target
+
+$ kubectl -n identity get pods -l app=api -o wide   (at peak)
+api-ff76468c8-95m2w Running identity-worker2
+api-ff76468c8-j4ds2 Running identity-worker
+api-ff76468c8-qdvqn Running identity-worker
+api-ff76468c8-wzfzt Running identity-worker2
+
+k6 summary:
+    http_req_duration
+    ✗ 'p(95)<300' p(95)=552.52ms
+    http_req_failed
+    ✓ 'rate<0.005' rate=0.00%
+    checks_total.......: 28073   93.574422/s
+    checks_succeeded...: 100.00% 28073 out of 28073
+    checks_failed......: 0.00%   0 out of 28073
+    ✓ status is 200
+    http_req_duration..............: avg=297.23ms min=4.63ms med=299.55ms max=768.45ms p(90)=516.26ms p(95)=552.52ms
+    http_req_failed................: 0.00%  0 out of 28073
+    http_reqs......................: 28073  93.574422/s
+time="2026-10-17T23:27:20+05:30" level=error msg="thresholds on metrics 'http_req_duration' have been crossed"
+
+After the test (scale-down waits 5 minutes by default):
+api   Deployment/api   cpu: 12%/70%   2     4     4     24m

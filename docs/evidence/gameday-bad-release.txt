@@ -1,0 +1,68 @@
+## Game day: bad release, started 2026-10-17T18:05:24Z
+18:05:25 Argo CD synced e812f45, CHAOS_ERROR_RATE=0.3, rollout complete
+18:05:35 err5m=nan err1h=0.0 alerts: none
+18:06:05 err5m=nan err1h=0.0 alerts: none
+18:06:35 err5m=0.302 err1h=0.045 alerts: IdentifyErrorBudgetSlowBurn=pending
+18:07:05 err5m=0.305 err1h=0.072 alerts: IdentifyErrorBudgetFastBurn=pending IdentifyErrorBudgetSlowBurn=pending
+18:07:36 err5m=0.302 err1h=0.093 alerts: IdentifyErrorBudgetFastBurn=pending IdentifyErrorBudgetSlowBurn=pending
+18:08:06 err5m=0.302 err1h=0.111 alerts: IdentifyErrorBudgetFastBurn=firing IdentifyErrorBudgetSlowBurn=pending
+
+## Investigation (RUNBOOK: high error rate)
+Step 2, recent change:
+$ kubectl -n argocd get app identity-dev -o jsonpath='{.status.history[-1]}'
+e812f457b055a205d35db60387195eba859239a4 deployed at 2026-10-17T18:04:07Z
+$ git log -1 --format='%h %s' e812f45 && git show e812f45 --format= | grep '^[-+] '
+e812f45 Game day: inject 30% errors on /identify in dev
++  chaosErrorRate: "0.3"
+
+Step 3, error logs from Loki:
+$ logcli-style query: {namespace="identity", app="api"} | json | level >= 50
+{"level":50,"time":1792260497920,"pid":1,"hostname":"api-7d669554cc-fk267","req":{"method":"POST","url":"/identify"},"trace_id":"5476537a2e2c98b6443cb07cb975b9a6","span_id":"88a41f49f90f3f50","trace_flags":"01","msg":"chaos: injected failure"}
+
+
+Step 3, the trace for that log line:
+$ curl localhost:16686/api/traces/5476537a2e2c98b6443cb07cb975b9a6
+  POST /identify                         1.7 ms status=500
+  middleware - patched                   0.9 ms 
+  middleware - patched                   1.0 ms 
+  router - /identify                     0.0 ms 
+  request handler - /identify            0.9 ms 
+  middleware - patched                   0.3 ms 
+  middleware - patched                   0.1 ms 
+  middleware - patched                   0.0 ms 
+  request handler - /identify            0.8 ms 
+  middleware - patched                   0.1 ms 
+  No pg.query spans: the request failed before touching the database, so Postgres is not the cause.
+
+Conclusion: the errors start with release e812f45, which set CHAOS_ERROR_RATE=0.3. Mitigation is to revert it.
+18:08:39 revert commit a543243 ready, waiting for push
+18:09:56 revert a543243 pushed
+
+## Mitigation and recovery
+18:10:06 Argo CD synced a543243, CHAOS_ERROR_RATE=0, rollout complete
+18:10:06 err5m=0.303 err1h=0.158 alerts: IdentifyErrorBudgetFastBurn=firing IdentifyErrorBudgetSlowBurn=pending
+18:10:36 err5m=0.304 err1h=0.167 alerts: IdentifyErrorBudgetFastBurn=firing IdentifyErrorBudgetSlowBurn=pending
+18:11:06 err5m=0.3 err1h=0.168 alerts: IdentifyErrorBudgetFastBurn=firing IdentifyErrorBudgetSlowBurn=pending
+18:11:36 err5m=0.265 err1h=0.158 alerts: IdentifyErrorBudgetFastBurn=firing IdentifyErrorBudgetSlowBurn=firing
+18:12:06 err5m=0.237 err1h=0.151 alerts: IdentifyErrorBudgetFastBurn=firing IdentifyErrorBudgetSlowBurn=firing
+18:12:36 err5m=0.208 err1h=0.145 alerts: IdentifyErrorBudgetFastBurn=firing IdentifyErrorBudgetSlowBurn=firing
+18:13:06 err5m=0.178 err1h=0.139 alerts: IdentifyErrorBudgetFastBurn=firing IdentifyErrorBudgetSlowBurn=firing
+18:13:36 err5m=0.147 err1h=0.134 alerts: IdentifyErrorBudgetFastBurn=firing IdentifyErrorBudgetSlowBurn=firing
+18:14:07 err5m=0.115 err1h=0.129 alerts: IdentifyErrorBudgetFastBurn=firing IdentifyErrorBudgetSlowBurn=firing
+18:14:37 err5m=0.08 err1h=0.125 alerts: IdentifyErrorBudgetFastBurn=firing IdentifyErrorBudgetSlowBurn=firing
+18:15:07 err5m=0.045 err1h=0.12 alerts: IdentifyErrorBudgetSlowBurn=firing
+
+1-minute error ratio of /identify (Prometheus query_range, 20s steps, changes only):
+  18:01:19 err1m= nan
+  18:05:59 err1m= 0.307
+  18:11:19 err1m= 0.0
+  now err1m= 0.0
+
+Slow-burn alert stays firing for a while because its 6 hour window still contains the bad period. It is a ticket, not a page.
+
+$ ./scripts/smoke.sh
+Version:
+{"version":"sha-07c7523","gitSha":"07c752363c9777a5f7877ece5c8f6daac5a33029","buildTime":"2026-10-17T23:17:59+05:30"}
+Identify smoke-1792260931@example.com:
+{"contact":{"primaryContactId":23,"emails":["smoke-1792256320@example.com","smoke-1792257826@example.com","smoke-1792259421@example.com","smoke-1792260050@example.com","smoke-1792260931@example.com"],"phoneNumbers":["5550001"],"secondaryContactIds":[24,25,5006,5029]}}
+OK

@@ -1,0 +1,50 @@
+# Small footprint for a laptop kind cluster.
+prometheus:
+  prometheusSpec:
+    # Pick up ServiceMonitors and rules from any namespace, not only ones labelled for this release.
+    serviceMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    retention: 2d
+    resources:
+      requests:
+        cpu: 100m
+        memory: 400Mi
+
+alertmanager:
+  alertmanagerSpec:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+
+grafana:
+  admin:
+    existingSecret: grafana-admin
+  sidecar:
+    dashboards:
+      enabled: true
+      searchNamespace: monitoring
+  additionalDataSources:
+    - name: Loki
+      type: loki
+      uid: loki
+      url: http://loki.monitoring:3100
+      jsonData:
+        derivedFields:
+          - name: trace_id
+            matcherRegex: '"trace_id":"(\w+)"'
+            url: "$${__value.raw}"
+            datasourceUid: jaeger
+    - name: Jaeger
+      type: jaeger
+      uid: jaeger
+      url: http://jaeger-query.monitoring:16686
+
+kubeEtcd:
+  enabled: false
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeProxy:
+  enabled: false

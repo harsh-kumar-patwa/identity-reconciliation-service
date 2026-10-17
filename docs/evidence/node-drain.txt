@@ -1,0 +1,26 @@
+## Drain identity-worker2 (postgres is on identity-worker), 2026-10-17T17:51:26Z
+$ kubectl -n identity get pdb api
+NAME   MIN AVAILABLE   MAX UNAVAILABLE   ALLOWED DISRUPTIONS   AGE
+api    1               N/A               1                     16m
+api-ff76468c8-4mvxj identity-worker2
+api-ff76468c8-j4ds2 identity-worker
+$ kubectl drain identity-worker2 --ignore-daemonsets --delete-emptydir-data
+evicting pod identity/migrate-cjnrs
+evicting pod identity/api-ff76468c8-4mvxj
+pod/migrate-cjnrs evicted
+pod/argocd-applicationset-controller-6578dbf755-2qnjk evicted
+pod/monitoring-kube-state-metrics-78fd56fc4b-vd9fh evicted
+pod/alertmanager-monitoring-kube-prometheus-alertmanager-0 evicted
+pod/monitoring-kube-prometheus-operator-69b4cc6cb4-9ngvl evicted
+pod/argocd-redis-5cfbbd857d-2sbv6 evicted
+pod/prometheus-monitoring-kube-prometheus-prometheus-0 evicted
+pod/argocd-repo-server-b6f9cfd4b-x55q4 evicted
+pod/jaeger-78d7786-9h8zb evicted
+pod/api-ff76468c8-4mvxj evicted
+node/identity-worker2 drained
+deployment "api" successfully rolled out
+api-ff76468c8-j4ds2 Running identity-worker
+api-ff76468c8-qdvqn Running identity-worker
+requests during drain: ok=158 failed=0
+$ kubectl uncordon identity-worker2
+node/identity-worker2 uncordoned
