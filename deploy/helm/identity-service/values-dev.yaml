@@ -1,5 +1,5 @@
 image:
-  tag: latest
+  tag: sha-8024d42
 
 config:
   logLevel: debug
