@@ -1,5 +1,5 @@
 image:
-  tag: sha-07c7523
+  tag: sha-0866ec9
 
 config:
   logLevel: debug
