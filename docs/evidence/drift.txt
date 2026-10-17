@@ -1,0 +1,7 @@
+## Drift demo, 2026-10-17T17:50:35Z
+$ kubectl -n identity get configmap api-config -o jsonpath='{.data.LOG_LEVEL}'
+debug
+$ kubectl -n identity patch configmap api-config -p '{"data":{"LOG_LEVEL":"error"}}'
+configmap/api-config patched
+right after manual edit: error
+Argo CD restored LOG_LEVEL=debug after 2s

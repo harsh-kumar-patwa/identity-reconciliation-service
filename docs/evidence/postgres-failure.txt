@@ -1,0 +1,30 @@
+## Postgres pod failure, 2026-10-17T17:50:46Z
+$ kubectl -n identity exec postgres-0 -- psql -U app -d identity -tc 'select count(*) from "Contact"'
+25
+
+$ kubectl -n identity delete pod postgres-0 --wait=false
+pod "postgres-0" deleted from identity namespace
+17:50:46 /identify=500 api_endpoints_ready=[true true] postgres_ready=true
+17:50:47 /identify=500 api_endpoints_ready=[true true] postgres_ready=false
+17:50:49 /identify=200 api_endpoints_ready=[true true] postgres_ready=true
+17:50:50 /identify=200 api_endpoints_ready=[true true] postgres_ready=true
+17:50:51 /identify=200 api_endpoints_ready=[true true] postgres_ready=true
+17:50:52 /identify=200 api_endpoints_ready=[true true] postgres_ready=true
+$ kubectl -n identity exec postgres-0 -- psql ... count after recovery
+26
+
+$ kubectl -n identity get pods
+api-ff76468c8-4mvxj   1/1   Running     0     83s
+api-ff76468c8-j4ds2   1/1   Running     0     73s
+migrate-cjnrs         0/1   Completed   0     91s
+postgres-0            1/1   Running     0     6s
+
+## Longer outage: scale postgres to 0, 2026-10-17T17:51:04Z
+$ kubectl -n identity scale statefulset postgres --replicas=0
+statefulset.apps/postgres scaled
+17:51:04 /identify=500 api_endpoints_ready=[true true] postgres_replicas(spec/ready)=0/1
+17:51:06 /identify=500 api_endpoints_ready=[true true] postgres_replicas(spec/ready)=1/
+17:51:07 /identify=200 api_endpoints_ready=[true true] postgres_replicas(spec/ready)=1/1
+17:51:08 /identify=200 api_endpoints_ready=[true true] postgres_replicas(spec/ready)=1/1
+17:51:09 /identify=200 api_endpoints_ready=[true true] postgres_replicas(spec/ready)=1/1
+17:51:10 /identify=200 api_endpoints_ready=[true true] postgres_replicas(spec/ready)=1/1
