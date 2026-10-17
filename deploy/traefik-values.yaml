@@ -24,6 +24,8 @@ ingressRoute:
 providers:
   kubernetesIngress:
     enabled: true
+    publishedService:
+      enabled: false
   kubernetesCRD:
     enabled: false
 # Only one node can hold hostPort 80/443, so the old pod must stop before the new one can start.
@@ -32,3 +34,7 @@ updateStrategy:
   rollingUpdate:
     maxUnavailable: 1
     maxSurge: 0
+# Writes 127.0.0.1 (the kind port mapping) into each Ingress status.
+# Argo CD only marks an Ingress healthy once it has an address there.
+additionalArguments:
+  - --providers.kubernetesingress.ingressendpoint.ip=127.0.0.1

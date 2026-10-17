@@ -4,6 +4,9 @@ metadata:
   name: api
   labels:
     {{- include "identity.labels" . | nindent 4 }}
+  annotations:
+    # Same wave as the Deployment. In an earlier wave they report unhealthy (no pods yet) and block the sync.
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   minAvailable: 1
   selector:
